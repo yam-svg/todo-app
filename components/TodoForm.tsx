@@ -22,6 +22,7 @@ export default function TodoForm({ onAdd, disabled }: TodoFormProps) {
   const [dueDate, setDueDate] = useState('');
   const [expanded, setExpanded] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -30,6 +31,7 @@ export default function TodoForm({ onAdd, disabled }: TodoFormProps) {
       return;
     }
     setError(null);
+    setSubmitting(true);
     try {
       await onAdd({
         title: title.trim(),
@@ -44,6 +46,8 @@ export default function TodoForm({ onAdd, disabled }: TodoFormProps) {
       setExpanded(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : '创建失败');
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -59,10 +63,10 @@ export default function TodoForm({ onAdd, disabled }: TodoFormProps) {
         />
         <button
           type="submit"
-          disabled={disabled}
+          disabled={disabled || submitting}
           className="rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-neutral-700 disabled:opacity-50"
         >
-          添加
+          {submitting ? '添加中…' : '添加'}
         </button>
       </div>
 

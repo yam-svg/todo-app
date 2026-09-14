@@ -18,6 +18,10 @@ export default function TodoList({ todos }: TodoListProps) {
   const [query, setQuery] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  // useTransition 的 pending 只在 router.refresh() 期间为真，不覆盖实际 fetch 阶段；
+  // 用 mutating 显式跟踪请求进行中的窗口，busy 取二者并集，慢请求时按钮才有 loading 反馈
+  const [mutating, setMutating] = useState(false);
+  const busy = pending || mutating;
 
   const counts: Record<Filter, number> = {
     all: todos.length,
@@ -35,11 +39,14 @@ export default function TodoList({ todos }: TodoListProps) {
 
   async function mutate(fn: () => Promise<unknown>) {
     setError(null);
+    setMutating(true);
     try {
       await fn();
       startTransition(() => router.refresh());
     } catch (err) {
       setError(err instanceof Error ? err.message : '操作失败，请稍后重试');
+    } finally {
+      setMutating(false);
     }
   }
 
@@ -72,7 +79,7 @@ export default function TodoList({ todos }: TodoListProps) {
 
   return (
     <div>
-      <TodoForm onAdd={handleAdd} disabled={pending} />
+      <TodoForm onAdd={handleAdd} disabled={busy} />
 
       <div className="mt-4">
         <FilterBar filter={filter} onFilter={setFilter} query={query} onQuery={setQuery} counts={counts} />
@@ -80,14 +87,14 @@ export default function TodoList({ todos }: TodoListProps) {
 
       {error && <p className="mt-3 rounded-md bg-red-50 px-3 py-2 text-xs text-red-600">{error}</p>}
 
-      {pending && (
+      {busy && (
         <div className="mt-3 flex items-center gap-2 text-xs text-neutral-400" aria-live="polite">
           <span className="size-3.5 animate-spin rounded-full border-2 border-neutral-300 border-t-neutral-500" />
           正在更新…
         </div>
       )}
 
-      <div className={`transition-opacity duration-200 ${pending ? 'pointer-events-none opacity-50' : 'opacity-100'}`}>
+      <div className={`transition-opacity duration-200 ${busy ? 'pointer-events-none opacity-50' : 'opacity-100'}`}>
         {visible.length > 0 ? (
           <ul className="mt-4 space-y-2">
             {visible.map((t) => (
@@ -98,7 +105,7 @@ export default function TodoList({ todos }: TodoListProps) {
                 onUpdate={handleUpdate}
                 onDelete={handleDelete}
                 onError={setError}
-                busy={pending}
+                busy={busy}
               />
             ))}
           </ul>

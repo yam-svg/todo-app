@@ -33,6 +33,8 @@ export default function TodoItem({ todo, onToggle, onDelete, onUpdate, busy, onE
   const [priority, setPriority] = useState<TodoPriority>(todo.priority);
   const [dueDate, setDueDate] = useState(todo.dueDate ? todo.dueDate.slice(0, 10) : '');
   const [saving, setSaving] = useState(false);
+  const [toggling, setToggling] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const overdue = !todo.done && todo.dueDate !== null && new Date(todo.dueDate) < new Date();
 
@@ -59,6 +61,29 @@ export default function TodoItem({ todo, onToggle, onDelete, onUpdate, busy, onE
       onError?.(err instanceof Error ? err.message : '保存失败，请稍后重试');
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleToggle() {
+    setToggling(true);
+    try {
+      await onToggle(todo);
+    } catch (err) {
+      onError?.(err instanceof Error ? err.message : '操作失败，请稍后重试');
+    } finally {
+      setToggling(false);
+    }
+  }
+
+  async function handleDelete() {
+    if (!window.confirm('确定删除这条待办？')) return;
+    setDeleting(true);
+    try {
+      await onDelete(todo);
+    } catch (err) {
+      onError?.(err instanceof Error ? err.message : '删除失败，请稍后重试');
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -148,15 +173,17 @@ export default function TodoItem({ todo, onToggle, onDelete, onUpdate, busy, onE
         {/* 明显的完成/撤销操作项，替代原有复选框 */}
         <button
           type="button"
-          onClick={() => onToggle(todo)}
-          disabled={busy}
+          onClick={handleToggle}
+          disabled={busy || toggling}
           className={`inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-50 ${
             todo.done
               ? 'text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600'
               : 'bg-neutral-900 text-white hover:bg-neutral-700'
           }`}
         >
-          {todo.done ? (
+          {toggling ? (
+            todo.done ? '撤销中…' : '完成中…'
+          ) : todo.done ? (
             '撤销完成'
           ) : (
             <>
@@ -181,13 +208,11 @@ export default function TodoItem({ todo, onToggle, onDelete, onUpdate, busy, onE
         </button>
         <button
           type="button"
-          onClick={() => {
-            if (window.confirm('确定删除这条待办？')) void onDelete(todo);
-          }}
-          disabled={busy}
+          onClick={handleDelete}
+          disabled={busy || deleting}
           className="rounded-md px-2 py-1.5 text-xs text-red-400 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          删除
+          {deleting ? '删除中…' : '删除'}
         </button>
       </div>
     </li>
