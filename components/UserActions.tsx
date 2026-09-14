@@ -1,6 +1,6 @@
 'use client';
 
-import { signOut } from '@/lib/auth';
+import { signOut } from 'next-auth/react';
 
 export default function UserActions({ name }: { name?: string }) {
   return (

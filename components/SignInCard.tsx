@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { signIn } from '@/lib/auth';
+import { signIn } from 'next-auth/react';
 
 export default function SignInCard({ configured }: { configured: boolean }) {
   const [loading, setLoading] = useState(false);
