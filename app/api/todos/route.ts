@@ -15,8 +15,8 @@ const orderBy = [
 
 const createSchema = z.object({
   title: z.string().trim().min(1, '标题不能为空').max(200, '标题不能超过 200 字'),
-  note: z.string().trim().max(2000, '备注不能超过 2000 字').optional(),
-  priority: z.enum(['low', 'medium', 'high']).optional(),
+  note: z.string().trim().max(2000, '备注不能超过 2000 字').nullable().optional(),
+  priority: z.enum(['low', 'medium', 'high']).nullable().optional(),
   dueDate: z.coerce.date().nullable().optional(),
 });
 
@@ -60,7 +60,7 @@ export async function POST(req: Request) {
       userId: session.user.id,
       title,
       note: note || null,
-      priority,
+      priority: priority ?? 'medium',
       dueDate: dueDate ?? null,
     })
     .returning();

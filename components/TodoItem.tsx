@@ -17,6 +17,8 @@ interface TodoItemProps {
     todo: TodoDTO,
     patch: Partial<Pick<TodoDTO, 'title' | 'note' | 'priority' | 'dueDate'>>,
   ) => Promise<void>;
+  /** 有请求进行中时禁用操作，避免重复提交 */
+  busy?: boolean;
   onError?: (message: string) => void;
 }
 
@@ -24,7 +26,7 @@ function formatDue(iso: string) {
   return new Date(iso).toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' });
 }
 
-export default function TodoItem({ todo, onToggle, onDelete, onUpdate, onError }: TodoItemProps) {
+export default function TodoItem({ todo, onToggle, onDelete, onUpdate, busy, onError }: TodoItemProps) {
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(todo.title);
   const [note, setNote] = useState(todo.note ?? '');
@@ -115,14 +117,11 @@ export default function TodoItem({ todo, onToggle, onDelete, onUpdate, onError }
   }
 
   return (
-    <li className="group flex items-start gap-3 rounded-lg border border-neutral-200 bg-white p-3 shadow-sm transition hover:border-neutral-300">
-      <input
-        type="checkbox"
-        checked={todo.done}
-        onChange={() => onToggle(todo)}
-        className="mt-0.5 size-4 accent-neutral-900"
-        aria-label="切换完成状态"
-      />
+    <li
+      className={`group flex items-center gap-3 rounded-lg border bg-white p-3 shadow-sm transition ${
+        todo.done ? 'border-neutral-200' : 'border-neutral-200 hover:border-neutral-300'
+      }`}
+    >
       <div className="min-w-0 flex-1">
         <p className={`text-sm ${todo.done ? 'text-neutral-400 line-through' : 'text-neutral-900'}`}>
           {todo.title}
@@ -144,18 +143,49 @@ export default function TodoItem({ todo, onToggle, onDelete, onUpdate, onError }
           </p>
         )}
       </div>
-      <div className="flex shrink-0 gap-1">
+
+      <div className="flex shrink-0 items-center gap-1.5">
+        {/* 明显的完成/撤销操作项，替代原有复选框 */}
         <button
+          type="button"
+          onClick={() => onToggle(todo)}
+          disabled={busy}
+          className={`inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-50 ${
+            todo.done
+              ? 'text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600'
+              : 'bg-neutral-900 text-white hover:bg-neutral-700'
+          }`}
+        >
+          {todo.done ? (
+            '撤销完成'
+          ) : (
+            <>
+              <svg viewBox="0 0 20 20" fill="currentColor" className="size-3.5" aria-hidden="true">
+                <path
+                  fillRule="evenodd"
+                  d="M16.704 5.29a1 1 0 0 1 .006 1.414l-7.2 7.3a1 1 0 0 1-1.42.004L3.29 9.2a1 1 0 1 1 1.42-1.408l2.087 2.1 6.493-6.587a1 1 0 0 1 1.414-.006Z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              完成
+            </>
+          )}
+        </button>
+        <button
+          type="button"
           onClick={startEdit}
-          className="rounded-md px-2 py-1 text-xs text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600"
+          disabled={busy}
+          className="rounded-md px-2 py-1.5 text-xs text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600 disabled:cursor-not-allowed disabled:opacity-50"
         >
           编辑
         </button>
         <button
+          type="button"
           onClick={() => {
             if (window.confirm('确定删除这条待办？')) void onDelete(todo);
           }}
-          className="rounded-md px-2 py-1 text-xs text-red-400 hover:bg-red-50 hover:text-red-600"
+          disabled={busy}
+          className="rounded-md px-2 py-1.5 text-xs text-red-400 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
         >
           删除
         </button>

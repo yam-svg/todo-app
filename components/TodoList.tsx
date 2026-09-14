@@ -14,7 +14,7 @@ interface TodoListProps {
 
 export default function TodoList({ todos }: TodoListProps) {
   const router = useRouter();
-  const [filter, setFilter] = useState<Filter>('all');
+  const [filter, setFilter] = useState<Filter>('active');
   const [query, setQuery] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -80,24 +80,34 @@ export default function TodoList({ todos }: TodoListProps) {
 
       {error && <p className="mt-3 rounded-md bg-red-50 px-3 py-2 text-xs text-red-600">{error}</p>}
 
-      {visible.length > 0 ? (
-        <ul className="mt-4 space-y-2">
-          {visible.map((t) => (
-            <TodoItem
-              key={t.id}
-              todo={t}
-              onToggle={handleToggle}
-              onUpdate={handleUpdate}
-              onDelete={handleDelete}
-              onError={setError}
-            />
-          ))}
-        </ul>
-      ) : (
-        <p className="mt-10 text-center text-sm text-neutral-400">
-          {todos.length === 0 ? '还没有待办，先在上方添加一条吧' : '没有符合条件的待办'}
-        </p>
+      {pending && (
+        <div className="mt-3 flex items-center gap-2 text-xs text-neutral-400" aria-live="polite">
+          <span className="size-3.5 animate-spin rounded-full border-2 border-neutral-300 border-t-neutral-500" />
+          正在更新…
+        </div>
       )}
+
+      <div className={`transition-opacity duration-200 ${pending ? 'pointer-events-none opacity-50' : 'opacity-100'}`}>
+        {visible.length > 0 ? (
+          <ul className="mt-4 space-y-2">
+            {visible.map((t) => (
+              <TodoItem
+                key={t.id}
+                todo={t}
+                onToggle={handleToggle}
+                onUpdate={handleUpdate}
+                onDelete={handleDelete}
+                onError={setError}
+                busy={pending}
+              />
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-10 text-center text-sm text-neutral-400">
+            {todos.length === 0 ? '还没有待办，先在上方添加一条吧' : '没有符合条件的待办'}
+          </p>
+        )}
+      </div>
     </div>
   );
 }
